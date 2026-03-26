@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Synthese de soutenance - OCS GE H3</title>
+    <style>
+      :root {
+        --bg: #f7f1e3;
+        --paper: #fffdf7;
+        --ink: #2f2419;
+        --muted: #715f4c;
+        --line: #d7c9b0;
+        --accent: #8b5a2b;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        font-family: "Iowan Old Style", "Palatino Linotype", "Book Antiqua", serif;
+        background: var(--bg);
+        color: var(--ink);
+        line-height: 1.6;
+      }
+
+      main {
+        width: min(920px, calc(100vw - 48px));
+        margin: 32px auto 48px;
+        background: var(--paper);
+        border: 1px solid var(--line);
+        border-radius: 20px;
+        padding: 40px 44px;
+        box-shadow: 0 14px 40px rgba(90, 67, 33, 0.08);
+      }
+
+      h1,
+      h2,
+      h3,
+      h4 {
+        line-height: 1.15;
+        margin: 0 0 14px;
+      }
+
+      h1 {
+        font-size: 2.4rem;
+        margin-bottom: 10px;
+      }
+
+      h2 {
+        font-size: 1.6rem;
+        margin-top: 34px;
+        padding-top: 24px;
+        border-top: 1px solid var(--line);
+      }
+
+      h3 {
+        font-size: 1.2rem;
+        margin-top: 22px;
+      }
+
+      p,
+      ul,
+      ol {
+        margin: 0 0 14px;
+      }
+
+      ul,
+      ol {
+        padding-left: 24px;
+      }
+
+      .intro {
+        color: var(--muted);
+        font-size: 1.05rem;
+      }
+
+      .bloc {
+        margin: 18px 0 0;
+        padding: 18px 20px;
+        background: rgba(139, 90, 43, 0.05);
+        border: 1px solid rgba(139, 90, 43, 0.18);
+        border-radius: 14px;
+      }
+
+      .bloc h4 {
+        margin-bottom: 8px;
+        font-size: 1rem;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: var(--accent);
+      }
+
+      code {
+        font-family: "SFMono-Regular", "Menlo", "Consolas", monospace;
+        font-size: 0.92em;
+        background: rgba(139, 90, 43, 0.08);
+        padding: 0.12em 0.35em;
+        border-radius: 6px;
+      }
+
+      a {
+        color: var(--accent);
+        text-decoration-thickness: 1px;
+        text-underline-offset: 2px;
+      }
+
+      @media print {
+        body {
+          background: #fff;
+        }
+
+        main {
+          width: 100%;
+          margin: 0;
+          box-shadow: none;
+          border: none;
+          border-radius: 0;
+          padding: 0;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Guide de discussion - soutenance</h1>
+      <p class="intro">
+        Support synthétique pour présenter le projet, expliquer les choix
+        techniques, faire le lien avec les fichiers importants et enchaîner vers
+        la démonstration.
+      </p>
+
+      <h2>1. Idée générale du projet</h2>
+      <p>
+        Le projet consiste à prendre les données IGN <strong>OCS GE 2023</strong>
+        du département de l'Yonne, à les transformer en <strong>entités H3</strong>,
+        puis à construire un outil de visualisation et de comparaison pour lire
+        ces données de manière plus compacte.
+      </p>
+      <p>
+        L'enjeu principal était de passer d'une donnée surfacique riche mais
+        complexe à une lecture plus simple à explorer, à comparer et à commenter
+        à l'oral.
+      </p>
+
+      <h2>2. Point de départ</h2>
+      <p>
+        Les données source viennent de l'IGN, plus précisément du jeu
+        <strong>OCS GE 2023</strong>.
+      </p>
+      <p>La logique du projet repose sur deux volets :</p>
+      <ul>
+        <li>un <strong>pipeline de transformation</strong> des données vers H3</li>
+        <li>un <strong>viewer interactif</strong> pour explorer les résultats</li>
+      </ul>
+      <p>
+        Le travail a d'abord été mené autour de <strong>Joigny</strong>, puis
+        étendu à une logique plus générale à l'échelle des communes de l'Yonne
+        et du département entier.
+      </p>
+
+      <h2>3. Pourquoi H3</h2>
+      <p>
+        H3 est un système de maillage hexagonal hiérarchique. Au lieu de
+        travailler uniquement avec les polygones d'origine, on découpe l'espace
+        en hexagones régulièrement répartis.
+      </p>
+      <p>Dans ce projet, H3 présente plusieurs intérêts :</p>
+      <ul>
+        <li>il homogénéise la lecture spatiale</li>
+        <li>il facilite la comparaison entre communes ou entre zones</li>
+        <li>il permet de changer de résolution de maillage</li>
+        <li>il rend la visualisation plus compacte et plus adaptée à une démonstration orale</li>
+      </ul>
+      <p>Un hexagone dans l'outil porte :</p>
+      <ul>
+        <li>une couverture du sol</li>
+        <li>un usage du sol</li>
+        <li>des informations de qualité</li>
+        <li>des attributs de synthèse comme la surface source agrégée</li>
+      </ul>
+      <div class="bloc">
+        <h4>Repères techniques</h4>
+        <p>
+          Conversion H3 dans
+          <a href="/Users/maelquillat/Documents/Travail/ING3/OccSol/scripts/build_h3.mjs">scripts/build_h3.mjs</a>
+          avec <code>geometryToCellSet()</code>.
+          Popup hexagone dans
+          <a href="/Users/maelquillat/Documents/Travail/ING3/OccSol/viewer/main.js">viewer/main.js</a>
+          avec <code>buildPopup()</code>.
+        </p>
+      </div>
+
+      <h2>4. Comment les données sont transformées</h2>
+      <ol>
+        <li>lecture des données IGN</li>
+        <li>filtrage spatial selon l'emprise choisie</li>
+        <li>regroupement des polygones par couple <code>couverture / usage</code></li>
+        <li>reprojection</li>
+        <li>conversion vers les cellules H3</li>
+        <li>résolution des conflits H3</li>
+        <li>comblement de certains trous</li>
+        <li>écriture des couches dérivées pour le viewer</li>
+      </ol>
+
+      <h3>4.1 Extraction et préparation</h3>
+      <p>
+        Le traitement commence par la lecture du GeoPackage IGN, puis un filtrage
+        selon la zone travaillée. Les polygones sont ensuite dissous par couple
+        <code>code_cs / code_us</code> pour alléger la suite du traitement.
+      </p>
+      <div class="bloc">
+        <h4>Repères techniques</h4>
+        <p>
+          <a href="/Users/maelquillat/Documents/Travail/ING3/OccSol/scripts/extract_ocsge.py">scripts/extract_ocsge.py</a>
+          avec <code>load_nomenclature()</code>, <code>get_scope_config()</code>,
+          <code>build_source_bbox()</code>, <code>load_scope_features()</code> et
+          <code>enrich_labels()</code>.
+        </p>
+      </div>
+
+      <h3>4.2 Conversion en cellules H3</h3>
+      <p>
+        Une fois les géométries préparées, elles sont converties en cellules H3
+        à la résolution choisie.
+      </p>
+      <div class="bloc">
+        <h4>Repères techniques</h4>
+        <p>
+          <a href="/Users/maelquillat/Documents/Travail/ING3/OccSol/scripts/build_h3.mjs">scripts/build_h3.mjs</a>
+          avec <code>geometryToCellSet()</code>, <code>resolveConflictCells()</code>
+          et <code>main()</code>.
+        </p>
+      </div>
+
+      <h3>4.3 Conflits H3</h3>
+      <p>
+        Un conflit H3 apparaît lorsque plusieurs polygones source se retrouvent
+        sur une même cellule H3. Dans la version finale, la classe conservée est
+        celle du polygone qui occupe la plus grande surface d'intersection avec
+        l'hexagone.
+      </p>
+      <div class="bloc">
+        <h4>Repères techniques</h4>
+        <p>
+          <a href="/Users/maelquillat/Documents/Travail/ING3/OccSol/scripts/resolve_h3_conflicts.py">scripts/resolve_h3_conflicts.py</a>
+          avec <code>project_geometry()</code> et <code>main()</code>.
+        </p>
+      </div>
+
+      <h3>4.4 Cellules inférées et trous</h3>
+      <p>
+        Certains trous ont été corrigés par post-traitement pour stabiliser les
+        couches H3. Les cellules ajoutées restent identifiées comme cellules
+        inférées.
+      </p>
+      <div class="bloc">
+        <h4>Repères techniques</h4>
+        <p>
+          <a href="/Users/maelquillat/Documents/Travail/ING3/OccSol/scripts/lib/h3_fill.mjs">scripts/lib/h3_fill.mjs</a>
+          avec <code>collectCandidateCells()</code>, <code>collectPairStats()</code>,
+          <code>rankPairs()</code> et <code>scoreCandidate()</code>.
+        </p>
+        <p>
+          Scripts associés :
+          <a href="/Users/maelquillat/Documents/Travail/ING3/OccSol/scripts/fill_h3_holes.mjs">fill_h3_holes.mjs</a>,
+          <a href="/Users/maelquillat/Documents/Travail/ING3/OccSol/scripts/fill_h3_boundary_gaps.mjs">fill_h3_boundary_gaps.mjs</a>,
+          <a href="/Users/maelquillat/Documents/Travail/ING3/OccSol/scripts/reframe_h3_to_study_area.mjs">reframe_h3_to_study_area.mjs</a>.
+        </p>
+      </div>
+
+      <h3>4.5 Optimisation des chargements</h3>
+      <p>
+        Les couches Yonne ont été découpées en chunks spatiaux afin de ne charger
+        que les morceaux utiles en mode commune.
+      </p>
+      <div class="bloc">
+        <h4>Repères techniques</h4>
+        <p>
+          <a href="/Users/maelquillat/Documents/Travail/ING3/OccSol/scripts/chunk_h3_dataset.mjs">scripts/chunk_h3_dataset.mjs</a>
+          avec <code>getChunkStep()</code>, <code>getFeatureBounds()</code> et
+          <code>main()</code>.
+        </p>
+      </div>
+
+      <h2>5. Ce que fait l'outil</h2>
+      <p>L'outil final est un viewer web local centré sur l'Yonne.</p>
+      <p>Il permet :</p>
+      <ul>
+        <li>de choisir une commune de l'Yonne</li>
+        <li>de travailler à l'échelle d'une zone d'étude autour de cette commune</li>
+        <li>de passer à une vue départementale</li>
+        <li>de changer de résolution H3</li>
+        <li>de basculer entre couverture du sol et usage du sol</li>
+        <li>d'utiliser un mode <code>Artificialisation</code></li>
+        <li>de comparer deux communes</li>
+        <li>d'afficher des indicateurs simples</li>
+        <li>de visualiser la qualité des données</li>
+      </ul>
+      <div class="bloc">
+        <h4>Repères techniques généraux</h4>
+        <p>
+          <a href="/Users/maelquillat/Documents/Travail/ING3/OccSol/viewer/index.html">viewer/index.html</a>,
+          <a href="/Users/maelquillat/Documents/Travail/ING3/OccSol/viewer/styles.css">viewer/styles.css</a>,
+          <a href="/Users/maelquillat/Documents/Travail/ING3/OccSol/viewer/main.js">viewer/main.js</a>.
+        </p>
+      </div>
+
+      <h2>6. Les grandes fonctionnalités du viewer</h2>
+
+      <h3>6.1 Choix de la commune</h3>
+      <p>
+        Le viewer permet de choisir une commune soit par saisie avec
+        auto-complétion, soit par clic sur la carte.
+      </p>
+      <div class="bloc">
+        <h4>Repères techniques</h4>
+        <p>
+          <code>loadCommunes()</code>, <code>getFilteredCommunes()</code>,
+          <code>renderCommuneSuggestions()</code>, <code>selectCommune()</code>,
+          <code>findCommuneAtLatLng()</code>.
+        </p>
+      </div>
+
+      <h3>6.2 Chargement des couches H3</h3>
+      <p>
+        Le viewer choisit la couche adaptée au mode courant, à la résolution
+        demandée, puis charge les données nécessaires.
+      </p>
+      <div class="bloc">
+        <h4>Repères techniques</h4>
+        <p>
+          <code>getAvailableResolutions()</code>, <code>loadDatasetData()</code>,
+          <code>mergeChunkCollections()</code>, <code>loadDataset()</code>,
+          <code>prefetchAdjacentDatasetData()</code>.
+        </p>
+      </div>
+
+      <h3>6.3 Affichage et style des hexagones</h3>
+      <p>
+        Les hexagones sont affichés dans Leaflet avec un style qui dépend du mode actif.
+      </p>
+      <div class="bloc">
+        <h4>Repères techniques</h4>
+        <p>
+          <code>styleFeature()</code>, <code>renderGeoJsonLayer()</code>,
+          <code>renderLayer()</code>, <code>refreshView()</code>.
+        </p>
+      </div>
+
+      <h3>6.4 Popup au survol</h3>
+      <p>
+        Le popup au survol explique ce que représente la cellule et affiche ses
+        principaux attributs.
+      </p>
+      <div class="bloc">
+        <h4>Repères techniques</h4>
+        <p>
+          <code>buildPopup()</code>, <code>getHoveredFeatureAtLatLng()</code>,
+          <code>updateHexHover()</code>, <code>clearHexHover()</code>.
+        </p>
+      </div>
+
+      <h3>6.5 Indicateurs et lecture métier</h3>
+      <p>
+        Le viewer produit une lecture métier simple de la zone affichée avec des
+        indicateurs sur l'agriculture, la forêt, l'artificialisation et l'eau.
+      </p>
+      <div class="bloc">
+        <h4>Repères techniques</h4>
+        <p>
+          <code>computeKeyShares()</code>, <code>renderIndicators()</code>,
+          <code>renderCoverageUsageComparison()</code>, <code>renderAnalysis()</code>,
+          <code>isArtificializedFeature()</code>.
+        </p>
+      </div>
+
+      <h3>6.6 Comparaison entre deux communes</h3>
+      <p>
+        Le projet permet de comparer une commune étudiée et une commune de
+        comparaison, avec lecture des écarts en <strong>étudiée - comparée</strong>.
+      </p>
+      <div class="bloc">
+        <h4>Repères techniques</h4>
+        <p>
+          <code>selectCompareCommune()</code>, <code>buildCommuneMetrics()</code>,
+          <code>getCommuneMetrics()</code>, <code>getCompareDeltaTone()</code>,
+          <code>buildCompareNarrative()</code>, <code>renderCompareSection()</code>,
+          <code>updateCompareCommuneLayer()</code>, <code>updateCompareHexLayer()</code>.
+        </p>
+      </div>
+
+      <h3>6.7 Rideau couverture / usage</h3>
+      <p>
+        Le rideau permet une lecture visuelle immédiate avec la couverture d'un
+        côté et l'usage de l'autre.
+      </p>
+      <div class="bloc">
+        <h4>Repères techniques</h4>
+        <p>
+          <code>applyCurtainClip()</code>, <code>updateCurtainRatioFromClientX()</code>,
+          <code>startCurtainDrag()</code>, <code>stopCurtainDrag()</code>,
+          <code>getCurtainSideMode()</code>.
+        </p>
+      </div>
+
+      <h3>6.8 Fiabilité et qualité</h3>
+      <p>
+        Le viewer affiche un niveau de fiabilité basé sur la part de cellules
+        inférées dans la zone visible.
+      </p>
+      <div class="bloc">
+        <h4>Repères techniques</h4>
+        <p>
+          <code>isInferredFeature()</code>, <code>getQualityMetrics()</code>,
+          <code>updateMapContext()</code>, <code>updateStats()</code>.
+        </p>
+      </div>
+
+      <h2>7. Structure du projet</h2>
+      <ul>
+        <li><strong>viewer</strong> : interface web</li>
+        <li><strong>scripts</strong> : pipeline de transformation</li>
+        <li><strong>data</strong> : données brutes, intermédiaires et dérivées</li>
+        <li><strong>docs</strong> : documentation et supports</li>
+        <li><strong>snapshots</strong> : points de retour</li>
+      </ul>
+
+      <h2>8. Comment l'IA a été utilisée</h2>
+      <p>L'IA a été utilisée comme <strong>copilote</strong> de projet.</p>
+      <p>Concrètement, elle a servi à :</p>
+      <ul>
+        <li>décomposer le sujet</li>
+        <li>proposer des plans de travail</li>
+        <li>accélérer l'implémentation</li>
+        <li>aider au debug</li>
+        <li>proposer des variantes d'interface</li>
+        <li>clarifier les explications et la documentation</li>
+      </ul>
+      <p>Deux usages sont à distinguer :</p>
+      <ul>
+        <li><strong>Codex</strong> pour le pipeline, le viewer, la performance, l'analyse et la documentation</li>
+        <li><strong>Claude</strong> pour une exploration ponctuelle autour du style CSS</li>
+      </ul>
+      <div class="bloc">
+        <h4>Repères documentaires</h4>
+        <p>
+          <a href="/Users/maelquillat/Documents/Travail/ING3/OccSol/docs/ai-log.md">docs/ai-log.md</a>
+          et
+          <a href="/Users/maelquillat/Documents/Travail/ING3/OccSol/docs/journal-demandes.md">docs/journal-demandes.md</a>.
+        </p>
+      </div>
+
+      <h2>9. Enchaînement vers la démonstration</h2>
+      <ol>
+        <li>rappeler la source de données et l'objectif</li>
+        <li>expliquer rapidement H3</li>
+        <li>montrer la vue <code>Commune</code></li>
+        <li>choisir <strong>Joigny</strong></li>
+        <li>montrer la zone d'étude et le contour communal</li>
+        <li>survoler un hexagone</li>
+        <li>basculer entre couverture et usage</li>
+        <li>montrer les indicateurs</li>
+        <li>activer le mode <code>Artificialisation</code></li>
+        <li>montrer le rideau</li>
+        <li>choisir une commune de comparaison</li>
+        <li>commenter les écarts</li>
+        <li>passer à la vue <code>Yonne</code></li>
+        <li>expliquer la résolution et le chargement par chunks</li>
+      </ol>
+
+      <h2>10. Questions probables</h2>
+      <p><strong>Pourquoi H3 ?</strong><br />Parce que H3 rend la lecture spatiale plus homogène et facilite la comparaison.</p>
+      <p><strong>Qu'est-ce qu'un conflit H3 ?</strong><br />Le cas où plusieurs polygones source veulent affecter une même cellule H3.</p>
+      <p><strong>Comment le conflit est-il résolu ?</strong><br />Par la plus grande surface d'intersection entre le polygone et l'hexagone.</p>
+      <p><strong>Qu'est-ce qu'une cellule inférée ?</strong><br />Une cellule ajoutée après le calcul brut pour combler un trou ou stabiliser une emprise.</p>
+      <p><strong>Comment l'IA a-t-elle été utilisée ?</strong><br />Comme assistant de conception, d'implémentation, d'itération et de documentation.</p>
+
+      <h2>11. Idée de conclusion</h2>
+      <p>
+        Le projet montre qu'il est possible de transformer une donnée IGN
+        surfacique riche en une lecture H3 plus compacte, plus comparable et plus
+        facilement commentable, tout en s'appuyant fortement sur l'IA pour
+        accélérer le développement et les itérations.
+      </p>
+    </main>
+  </body>
+  </html>

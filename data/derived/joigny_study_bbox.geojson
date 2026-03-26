@@ -1,0 +1,20 @@
+{
+  "type": "Feature",
+  "properties": {
+    "name": "Emprise d'etude Joigny",
+    "scope": "joigny",
+    "kind": "study_bbox"
+  },
+  "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+      [
+        [3.2992205, 47.944317],
+        [3.5192205, 47.944317],
+        [3.5192205, 48.074317],
+        [3.2992205, 48.074317],
+        [3.2992205, 47.944317]
+      ]
+    ]
+  }
+}

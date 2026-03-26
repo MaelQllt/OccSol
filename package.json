@@ -1,0 +1,17 @@
+{
+  "name": "ocsge-h3-yonne-mvp",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "MVP OCS GE 2023 Yonne -> H3 -> viewer",
+  "scripts": {
+    "build:joigny": "/Users/maelquillat/anaconda3/bin/python3 scripts/extract_ocsge.py --scope joigny && node scripts/build_h3.mjs --input data/intermediate/joigny_ocs_pair.geojson --output data/derived/joigny_h3.geojson --scope joigny --resolution 9",
+    "build:yonne": "/Users/maelquillat/anaconda3/bin/python3 scripts/extract_ocsge.py --scope yonne && node scripts/build_h3.mjs --input data/intermediate/yonne_ocs_pair.geojsonl --output data/derived/yonne_h3.geojson --scope yonne --resolution 8",
+    "build:all": "npm run build:joigny && npm run build:yonne",
+    "serve": "python3 -m http.server 8000"
+  },
+  "dependencies": {
+    "h3-js": "^4.3.0",
+    "leaflet": "^1.9.4"
+  }
+}

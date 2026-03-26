@@ -1,0 +1,38 @@
+{
+  "scope": "yonne",
+  "resolution": 9,
+  "input": "data/intermediate/yonne_ocs_pair.geojsonl",
+  "output": "data/derived/yonne_h3_r9.geojson",
+  "source_feature_count": 96,
+  "source_polygon_count": 234256,
+  "hexagon_count": 78286,
+  "collisions": 2079,
+  "conflict_cells": 2034,
+  "conflict_resolution": "max_intersection_area",
+  "inferred_fill_count": 2087,
+  "fill_min_neighbors": 3,
+  "fill_max_passes": 6,
+  "fill_mask": "data/derived/yonne_communes.geojson",
+  "fill_passes": [
+    {
+      "pass": 1,
+      "candidates": 4085,
+      "filled": 2080
+    },
+    {
+      "pass": 2,
+      "candidates": 2035,
+      "filled": 0
+    },
+    {
+      "pass": "sparse-1",
+      "candidates": 2035,
+      "filled": 7
+    },
+    {
+      "pass": "sparse-2",
+      "candidates": 2042,
+      "filled": 0
+    }
+  ]
+}

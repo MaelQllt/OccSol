@@ -1,0 +1,11 @@
+.DS_Store
+node_modules/
+__pycache__/
+*.pyc
+*.mov
+snapshots/
+data/raw/
+data/intermediate/yonne_ocs_pair.geojson
+data/intermediate/yonne_ocs_pair.geojsonl
+data/derived/yonne_h3_r9.geojson
+data/derived/yonne_h3_r10.geojson

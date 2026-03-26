@@ -1,0 +1,11 @@
+{
+  "scope": "joigny",
+  "resolution": 8,
+  "input": "data/intermediate/joigny_ocs_pair.geojson",
+  "output": "data/derived/joigny_h3_r8.geojson",
+  "source_feature_count": 70,
+  "source_polygon_count": 11602,
+  "hexagon_count": 358,
+  "collisions": 0,
+  "inferred_study_fill_count": 66
+}

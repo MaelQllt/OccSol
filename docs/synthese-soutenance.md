@@ -1,0 +1,420 @@
+# Guide de discussion - soutenance
+
+## 1. Idee generale du projet
+
+Le projet consiste a prendre les donnees IGN **OCS GE 2023** du departement de l'Yonne, a les transformer en **entites H3**, puis a construire un outil de visualisation et de comparaison pour lire ces donnees de maniere plus compacte.
+
+L'enjeu principal etait de passer d'une donnee surfacique riche mais complexe a une lecture plus simple a explorer, a comparer et a commenter a l'oral.
+
+## 2. Point de depart
+
+Les donnees source viennent de l'IGN, plus precisement du jeu **OCS GE 2023**.
+
+La logique du projet repose sur deux volets :
+
+- un **pipeline de transformation** des donnees vers H3
+- un **viewer interactif** pour explorer les resultats
+
+Le travail a d'abord ete mene autour de **Joigny**, puis etendu a une logique plus generale a l'echelle des communes de l'Yonne et du departement entier.
+
+## 3. Pourquoi H3
+
+H3 est un systeme de maillage hexagonal hierarchique. Au lieu de travailler uniquement avec les polygones d'origine, on decoupe l'espace en hexagones regulierement repartis.
+
+Dans ce projet, H3 presente plusieurs interets :
+
+- il homogenise la lecture spatiale
+- il facilite la comparaison entre communes ou entre zones
+- il permet de changer de resolution de maillage
+- il rend la visualisation plus compacte et plus adaptee a une demonstration orale
+
+Un hexagone dans l'outil correspond donc a une cellule H3 a laquelle on affecte une information dominante issue de l'OCS GE :
+
+- une **couverture du sol**
+- un **usage du sol**
+- des informations de qualite
+- des attributs de synthese comme la surface source agregee
+
+### Reperes techniques
+
+La conversion vers H3 se trouve principalement dans [scripts/build_h3.mjs](/Users/maelquillat/Documents/Travail/ING3/OccSol/scripts/build_h3.mjs), notamment dans `geometryToCellSet()` et `main()`.
+
+L'affichage des attributs d'un hexagone dans le viewer se trouve dans [viewer/main.js](/Users/maelquillat/Documents/Travail/ING3/OccSol/viewer/main.js), notamment dans `buildPopup()`.
+
+## 4. Comment les donnees sont transformees
+
+La chaine de transformation suit une logique assez simple :
+
+1. lecture des donnees IGN
+2. filtrage spatial selon l'emprise choisie
+3. regroupement des polygones par couple `couverture / usage`
+4. reprojection dans un systeme compatible avec le traitement H3
+5. conversion vers les cellules H3
+6. resolution des conflits H3
+7. comblement de certains trous
+8. ecriture des couches derivees pour le viewer
+
+### 4.1 Extraction et preparation
+
+Le traitement commence par la lecture du GeoPackage IGN, puis un filtrage selon la zone travaillée. Les polygones sont ensuite dissous par couple `code_cs / code_us` pour alleger la suite du traitement.
+
+Les couleurs et libelles sont recuperes via la nomenclature IGN.
+
+### Reperes techniques
+
+[scripts/extract_ocsge.py](/Users/maelquillat/Documents/Travail/ING3/OccSol/scripts/extract_ocsge.py)
+
+Fonctions importantes :
+
+- `load_nomenclature()`
+- `get_scope_config()`
+- `build_source_bbox()`
+- `load_scope_features()`
+- `enrich_labels()`
+
+### 4.2 Conversion en cellules H3
+
+Une fois les geometries preparees, elles sont converties en cellules H3 a la resolution choisie.
+
+L'objectif n'est pas de conserver la geometrie exacte des polygones, mais de produire une lecture compacte sous forme d'hexagones.
+
+### Reperes techniques
+
+[scripts/build_h3.mjs](/Users/maelquillat/Documents/Travail/ING3/OccSol/scripts/build_h3.mjs)
+
+Fonctions importantes :
+
+- `geometryToCellSet()`
+- `resolveConflictCells()`
+- `main()`
+
+### 4.3 Conflits H3
+
+Un conflit H3 apparait lorsque plusieurs polygones source se retrouvent sur une meme cellule H3.
+
+Dans la version finale du projet, la classe conservee est celle du polygone qui occupe la **plus grande surface d'intersection** avec l'hexagone. On n'utilise donc plus une logique du type "premier arrive, premier garde".
+
+### Reperes techniques
+
+[scripts/resolve_h3_conflicts.py](/Users/maelquillat/Documents/Travail/ING3/OccSol/scripts/resolve_h3_conflicts.py)
+
+Fonctions importantes :
+
+- `project_geometry()`
+- `main()`
+
+### 4.4 Cellules inferees et trous
+
+Lors des iterations, certains trous sont apparus dans les couches H3. Un post-traitement a donc ete ajoute pour combler les trous internes plausibles et stabiliser certaines emprises d'etude.
+
+Ces cellules restent identifiees comme cellules **inferees** pour garder une lecture honnete de la qualite.
+
+Deux cas existent dans le projet :
+
+- `inferred_fill` : cellule ajoutee pour combler un trou
+- `inferred_study_fill` : cellule ajoutee pour completer une zone d'etude
+
+### Reperes techniques
+
+[scripts/lib/h3_fill.mjs](/Users/maelquillat/Documents/Travail/ING3/OccSol/scripts/lib/h3_fill.mjs)
+
+Fonctions importantes :
+
+- `collectCandidateCells()`
+- `collectPairStats()`
+- `rankPairs()`
+- `scoreCandidate()`
+
+Autres scripts lies :
+
+- [scripts/fill_h3_holes.mjs](/Users/maelquillat/Documents/Travail/ING3/OccSol/scripts/fill_h3_holes.mjs)
+- [scripts/fill_h3_boundary_gaps.mjs](/Users/maelquillat/Documents/Travail/ING3/OccSol/scripts/fill_h3_boundary_gaps.mjs)
+- [scripts/reframe_h3_to_study_area.mjs](/Users/maelquillat/Documents/Travail/ING3/OccSol/scripts/reframe_h3_to_study_area.mjs)
+
+### 4.5 Optimisation des chargements
+
+Le viewer ne charge pas toujours une couche departementale complete quand on travaille sur une commune. Les donnees Yonne ont ete decoupees en **chunks spatiaux** afin de charger seulement les morceaux utiles a la zone affichee.
+
+Cela permet de reduire le temps de chargement, en particulier pour les resolutions fines.
+
+### Reperes techniques
+
+[scripts/chunk_h3_dataset.mjs](/Users/maelquillat/Documents/Travail/ING3/OccSol/scripts/chunk_h3_dataset.mjs)
+
+Fonctions importantes :
+
+- `getChunkStep()`
+- `getFeatureBounds()`
+- `main()`
+
+## 5. Ce que fait l'outil
+
+L'outil final est un viewer web local centre sur l'Yonne, avec une logique d'exploration, de comparaison et de commentaire cartographique.
+
+Il permet :
+
+- de choisir une commune de l'Yonne
+- de travailler a l'echelle d'une zone d'etude autour de cette commune
+- de passer a une vue departementale
+- de changer de resolution H3
+- de basculer entre couverture du sol et usage du sol
+- d'utiliser un mode `Artificialisation`
+- de comparer deux communes
+- d'afficher des indicateurs simples
+- de visualiser la qualite des donnees
+
+### Reperes techniques generaux
+
+- [viewer/index.html](/Users/maelquillat/Documents/Travail/ING3/OccSol/viewer/index.html)
+- [viewer/styles.css](/Users/maelquillat/Documents/Travail/ING3/OccSol/viewer/styles.css)
+- [viewer/main.js](/Users/maelquillat/Documents/Travail/ING3/OccSol/viewer/main.js)
+
+## 6. Les grandes fonctionnalites du viewer
+
+### 6.1 Choix de la commune
+
+Le viewer permet de choisir une commune soit par saisie avec auto-completion, soit par clic sur la carte.
+
+Cela permet de travailler sur une logique de **zone d'etude autour d'une commune**, et non uniquement sur Joigny.
+
+### Reperes techniques
+
+Dans [viewer/main.js](/Users/maelquillat/Documents/Travail/ING3/OccSol/viewer/main.js) :
+
+- `loadCommunes()`
+- `getFilteredCommunes()`
+- `renderCommuneSuggestions()`
+- `selectCommune()`
+- `findCommuneAtLatLng()`
+
+### 6.2 Chargement des couches H3
+
+Le viewer choisit la couche adaptee au mode courant, a la resolution demandee, puis charge les donnees necessaires. En mode commune, il recharge localement les morceaux utiles. En mode Yonne, il charge la couche departementale.
+
+### Reperes techniques
+
+Dans [viewer/main.js](/Users/maelquillat/Documents/Travail/ING3/OccSol/viewer/main.js) :
+
+- `getAvailableResolutions()`
+- `loadDatasetData()`
+- `mergeChunkCollections()`
+- `loadDataset()`
+- `prefetchAdjacentDatasetData()`
+
+### 6.3 Affichage et style des hexagones
+
+Les hexagones sont affiches dans Leaflet avec un style qui depend du mode actif : couverture, usage, artificialisation, comparaison, rideau.
+
+### Reperes techniques
+
+Dans [viewer/main.js](/Users/maelquillat/Documents/Travail/ING3/OccSol/viewer/main.js) :
+
+- `styleFeature()`
+- `renderGeoJsonLayer()`
+- `renderLayer()`
+- `refreshView()`
+
+### 6.4 Popup au survol
+
+Le viewer affiche un popup au survol d'un hexagone. Ce popup sert a expliquer ce que represente la cellule : couverture, usage, resolution, surface source, nombre de polygones source et qualite.
+
+### Reperes techniques
+
+Dans [viewer/main.js](/Users/maelquillat/Documents/Travail/ING3/OccSol/viewer/main.js) :
+
+- `buildPopup()`
+- `getHoveredFeatureAtLatLng()`
+- `updateHexHover()`
+- `clearHexHover()`
+
+### 6.5 Indicateurs et lecture metier
+
+Le viewer produit une lecture metier simple de la zone affichee avec quatre indicateurs principaux :
+
+- part agricole
+- part forestiere
+- part artificialisee
+- part eau
+
+Il compare aussi la couverture du sol et l'usage du sol, ce qui permet de distinguer la lecture physique du territoire de sa lecture fonctionnelle.
+
+### Reperes techniques
+
+Dans [viewer/main.js](/Users/maelquillat/Documents/Travail/ING3/OccSol/viewer/main.js) :
+
+- `computeKeyShares()`
+- `renderIndicators()`
+- `renderCoverageUsageComparison()`
+- `renderAnalysis()`
+- `isArtificializedFeature()`
+
+### 6.6 Comparaison entre deux communes
+
+Le projet permet de comparer une commune etudiee et une commune de comparaison.
+
+La comparaison est lue comme **etudiee - comparee**, afin que la lecture des ecarts soit plus intuitive. Les deux communes peuvent etre visibles sur la carte, avec leurs contours et leurs hexagones.
+
+Le viewer genere egalement une phrase automatique de comparaison.
+
+### Reperes techniques
+
+Dans [viewer/main.js](/Users/maelquillat/Documents/Travail/ING3/OccSol/viewer/main.js) :
+
+- `selectCompareCommune()`
+- `buildCommuneMetrics()`
+- `getCommuneMetrics()`
+- `getCompareDeltaTone()`
+- `buildCompareNarrative()`
+- `renderCompareDeltaRow()`
+- `renderCompareSection()`
+- `updateCompareCommuneLayer()`
+- `updateCompareHexLayer()`
+
+### 6.7 Rideau couverture / usage
+
+Le viewer integre un rideau visuel pour montrer d'un cote la couverture du sol et de l'autre l'usage du sol. Cela permet de faire une comparaison tres visuelle de deux lectures differentes du territoire.
+
+### Reperes techniques
+
+Dans [viewer/main.js](/Users/maelquillat/Documents/Travail/ING3/OccSol/viewer/main.js) :
+
+- `applyCurtainClip()`
+- `updateCurtainRatioFromClientX()`
+- `startCurtainDrag()`
+- `stopCurtainDrag()`
+- `getCurtainSideMode()`
+
+### 6.8 Fiabilite et qualite
+
+Le viewer ne montre pas uniquement les classes. Il affiche aussi une indication de qualite basee sur la part de cellules inferees dans la zone visible.
+
+L'objectif n'est pas de donner une certification scientifique absolue, mais de rendre la lecture plus honnete et plus robuste pendant la demonstration.
+
+### Reperes techniques
+
+Dans [viewer/main.js](/Users/maelquillat/Documents/Travail/ING3/OccSol/viewer/main.js) :
+
+- `isInferredFeature()`
+- `getQualityMetrics()`
+- `updateMapContext()`
+- `updateStats()`
+
+## 7. Structure du projet
+
+Le projet se repartit en quelques dossiers simples.
+
+### `viewer`
+
+Ce dossier contient toute l'interface web :
+
+- [viewer/index.html](/Users/maelquillat/Documents/Travail/ING3/OccSol/viewer/index.html)
+- [viewer/styles.css](/Users/maelquillat/Documents/Travail/ING3/OccSol/viewer/styles.css)
+- [viewer/main.js](/Users/maelquillat/Documents/Travail/ING3/OccSol/viewer/main.js)
+
+### `scripts`
+
+Ce dossier contient tous les traitements de transformation et de preparation des donnees :
+
+- [scripts/extract_ocsge.py](/Users/maelquillat/Documents/Travail/ING3/OccSol/scripts/extract_ocsge.py)
+- [scripts/build_h3.mjs](/Users/maelquillat/Documents/Travail/ING3/OccSol/scripts/build_h3.mjs)
+- [scripts/resolve_h3_conflicts.py](/Users/maelquillat/Documents/Travail/ING3/OccSol/scripts/resolve_h3_conflicts.py)
+- [scripts/chunk_h3_dataset.mjs](/Users/maelquillat/Documents/Travail/ING3/OccSol/scripts/chunk_h3_dataset.mjs)
+- [scripts/fill_h3_holes.mjs](/Users/maelquillat/Documents/Travail/ING3/OccSol/scripts/fill_h3_holes.mjs)
+- [scripts/fill_h3_boundary_gaps.mjs](/Users/maelquillat/Documents/Travail/ING3/OccSol/scripts/fill_h3_boundary_gaps.mjs)
+- [scripts/reframe_h3_to_study_area.mjs](/Users/maelquillat/Documents/Travail/ING3/OccSol/scripts/reframe_h3_to_study_area.mjs)
+- [scripts/lib/h3_fill.mjs](/Users/maelquillat/Documents/Travail/ING3/OccSol/scripts/lib/h3_fill.mjs)
+
+### `data`
+
+Ce dossier contient :
+
+- les donnees source IGN
+- les sorties intermediaires
+- les couches H3 derivees
+- les contours, communes, bbox et chunks
+
+### `docs`
+
+Ce dossier contient :
+
+- la documentation du projet
+- le journal des demandes
+- le journal IA
+- le fil conducteur de presentation
+- les resumes JSON et les resultats
+
+### `snapshots`
+
+Ce dossier sert a conserver des points de retour stables du projet.
+
+## 8. Comment l'IA a ete utilisee
+
+L'IA a ete utilisee comme **copilote** de projet.
+
+Concretement, elle a servi a :
+
+- decomposer le sujet
+- proposer des plans de travail
+- accelerer l'implementation
+- aider au debug
+- proposer des variantes d'interface
+- clarifier les explications et la documentation
+
+Deux usages sont a distinguer :
+
+- **Codex** pour la logique du pipeline, du viewer, de la performance, de l'analyse et de la documentation
+- **Claude** pour une exploration ponctuelle autour du style CSS et de l'identite visuelle
+
+La formulation la plus juste a l'oral est la suivante :
+
+> L'IA m'a aide a concevoir, iterer et deboguer plus vite, mais j'ai garde la validation des choix, l'integration du code et les arbitrages techniques.
+
+### Reperes documentaires
+
+- [docs/ai-log.md](/Users/maelquillat/Documents/Travail/ING3/OccSol/docs/ai-log.md)
+- [docs/journal-demandes.md](/Users/maelquillat/Documents/Travail/ING3/OccSol/docs/journal-demandes.md)
+
+## 9. Enchainement vers la demonstration
+
+Une demonstration simple peut suivre cette progression :
+
+1. rappeler la source de donnees et l'objectif
+2. expliquer rapidement H3
+3. montrer la vue `Commune`
+4. choisir `Joigny`
+5. montrer la zone d'etude et le contour communal
+6. survoler un hexagone
+7. basculer entre couverture et usage
+8. montrer les indicateurs
+9. activer le mode `Artificialisation`
+10. montrer le rideau
+11. choisir une commune de comparaison
+12. commenter les ecarts
+13. passer a la vue `Yonne`
+14. expliquer la resolution et le chargement par chunks
+
+## 10. Questions probables
+
+### Pourquoi H3 ?
+
+Parce que H3 rend la lecture spatiale plus homogène et facilite la comparaison par rapport aux polygones bruts.
+
+### Qu'est-ce qu'un conflit H3 ?
+
+C'est le cas ou plusieurs polygones source veulent affecter une meme cellule H3.
+
+### Comment le conflit est-il resolu ?
+
+Par la plus grande surface d'intersection entre le polygone et l'hexagone.
+
+### Qu'est-ce qu'une cellule inferee ?
+
+Une cellule ajoutee apres le calcul brut pour combler un trou ou stabiliser une emprise.
+
+### Comment l'IA a-t-elle ete utilisee ?
+
+Comme assistant de conception, d'implementation, d'iteration et de documentation, sans remplacer la validation humaine.
+
+## 11. Idee de conclusion
+
+Le projet montre qu'il est possible de transformer une donnee IGN surfacique riche en une lecture H3 plus compacte, plus comparable et plus facilement commentable, tout en s'appuyant fortement sur l'IA pour accelerer le developpement et les iterations.

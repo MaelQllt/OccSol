@@ -1,0 +1,331 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>OCS GE H3</title>
+    <link rel="icon" href="./favicon_light.svg" type="image/svg+xml" media="(prefers-color-scheme: light)">
+    <link rel="icon" href="./favicon_dark.svg" type="image/svg+xml" media="(prefers-color-scheme: dark)">
+    <link rel="icon" href="./favicon_light.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="../node_modules/leaflet/dist/leaflet.css">
+    <link rel="stylesheet" href="./styles.css">
+  </head>
+  <body>
+    <aside class="panel">
+      <div class="panel-scroll">
+        <header class="panel-header">
+          <p class="eyebrow">IGN OCS GE 2023 -> H3</p>
+          <h1>Occupation du sol sous H3</h1>
+          <p class="intro">Lecture compacte de l'OCS GE sur maillage hexagonal. Outil de visualisation et de comparaison porté sur le département de l'Yonne.</p>
+          <div class="header-strip">
+            <span id="scope-badge" class="badge">-</span>
+            <span id="status" class="status-inline">Chargement...</span>
+          </div>
+        </header>
+
+        <section class="card controls">
+          <div class="control-field">
+            <span class="control-label">Zone</span>
+            <div class="segmented-control" role="tablist" aria-label="Zone">
+              <button id="scope-commune" class="segment-button active" type="button" data-scope="commune">Commune</button>
+              <button id="scope-yonne" class="segment-button" type="button" data-scope="yonne">Yonne</button>
+            </div>
+          </div>
+
+          <div id="commune-field" class="control-field">
+            <span class="control-label">Commune d'étude</span>
+            <div id="commune-picker" class="commune-picker">
+              <input
+                id="commune-search"
+                class="text-input"
+                type="text"
+                autocomplete="off"
+                spellcheck="false"
+                placeholder="Tape une commune de l'Yonne"
+              >
+              <div id="commune-suggestions" class="dropdown-menu commune-suggestions" hidden></div>
+            </div>
+            <p id="commune-meta" class="hint">Chargement des communes...</p>
+          </div>
+
+          <div id="compare-commune-field" class="control-field">
+            <div class="inline-control-header">
+              <span class="control-label">Commune de comparaison</span>
+              <button id="clear-compare-button" type="button" class="badge badge-button" hidden>Retirer</button>
+            </div>
+            <div id="compare-commune-picker" class="commune-picker">
+              <input
+                id="compare-commune-search"
+                class="text-input"
+                type="text"
+                autocomplete="off"
+                spellcheck="false"
+                placeholder="Choisir une autre commune"
+              >
+              <div id="compare-commune-suggestions" class="dropdown-menu commune-suggestions" hidden></div>
+            </div>
+            <p id="compare-commune-meta" class="hint">Aucune comparaison active.</p>
+          </div>
+
+          <div class="control-field">
+            <span class="control-label">Coloration</span>
+            <div class="segmented-control" role="tablist" aria-label="Coloration">
+              <button id="mode-coverage" class="segment-button active" type="button" data-color-mode="coverage">Couverture</button>
+              <button id="mode-usage" class="segment-button" type="button" data-color-mode="usage">Usage</button>
+            </div>
+          </div>
+
+          <div class="control-field">
+            <span class="control-label">Lecture métier</span>
+            <div class="segmented-control" role="tablist" aria-label="Lecture métier">
+              <button id="focus-all" class="segment-button active" type="button" data-focus-mode="all">Global</button>
+              <button id="focus-artificial" class="segment-button" type="button" data-focus-mode="artificialization">Artificialisation</button>
+            </div>
+          </div>
+
+          <div class="control-field">
+            <span class="control-label">Résolution H3</span>
+            <div id="resolution-dropdown" class="filter-dropdown">
+              <button id="resolution-button" class="dropdown-button" type="button" aria-expanded="false">
+                <span id="resolution-label">Résolution 9</span>
+                <span class="dropdown-caret" aria-hidden="true"></span>
+              </button>
+              <div id="resolution-menu" class="dropdown-menu" hidden></div>
+            </div>
+            <div id="zoom-suggestion" class="zoom-suggestion" hidden>
+              <span id="zoom-suggestion-text" class="hint">Suggestion de résolution</span>
+              <button id="zoom-suggestion-button" class="badge badge-button" type="button">Appliquer</button>
+            </div>
+          </div>
+
+          <div class="control-field">
+            <span class="control-label">Filtre de classe</span>
+            <div id="class-filter-dropdown" class="filter-dropdown">
+              <button id="class-filter-button" class="dropdown-button" type="button" aria-expanded="false">
+                <span id="class-filter-label">Toutes les classes</span>
+                <span class="dropdown-caret" aria-hidden="true"></span>
+              </button>
+              <div id="class-filter-menu" class="dropdown-menu" hidden></div>
+            </div>
+          </div>
+
+          <div class="control-field">
+            <span class="control-label">Opacité des hexagones</span>
+            <div class="range-row">
+              <input id="opacity-range" type="range" min="0.2" max="1" step="0.05" value="0.78">
+              <span id="opacity-value">78%</span>
+            </div>
+          </div>
+
+          <div class="button-row">
+            <button id="fit-button" type="button" class="secondary-button">Recentrer la carte</button>
+            <button id="reload-button" type="button">Recharger la couche</button>
+          </div>
+          <button id="clear-filters-button" type="button" class="secondary-button full-width-button">Effacer les filtres</button>
+        </section>
+
+        <section class="stats compact-stats">
+          <div class="stat-card">
+            <span class="stat-label">Hexagones visibles</span>
+            <strong id="hex-count">-</strong>
+            <span id="hex-count-meta" class="stat-meta">-</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-label">Résolution H3</span>
+            <strong id="hex-resolution">-</strong>
+            <span class="stat-meta">Résolution de maillage</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-label">Classes visibles</span>
+            <strong id="visible-class-count">-</strong>
+            <span class="stat-meta">Après filtre éventuel</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-label">Conflits H3</span>
+            <strong id="collision-count">-</strong>
+            <span id="collision-meta" class="stat-meta">Qualité d'affectation</span>
+          </div>
+        </section>
+
+        <section class="card tab-shell">
+          <div class="tab-header" role="tablist" aria-label="Panneaux d'analyse">
+            <button id="tab-summary" class="tab-button active" type="button" data-tab="summary" role="tab" aria-selected="true">Synthèse</button>
+            <button id="tab-legend" class="tab-button" type="button" data-tab="legend" role="tab" aria-selected="false">Légende</button>
+          </div>
+
+          <div id="panel-summary" class="tab-panel active" data-tab-panel="summary" role="tabpanel">
+            <p id="scope-summary" class="hint">Chargement des métadonnées...</p>
+            <div class="quality-strip">
+              <div class="quality-pill">
+                <span class="stat-label">Fiabilité</span>
+                <strong id="quality-score">-</strong>
+              </div>
+              <div class="quality-pill">
+                <span class="stat-label">Cellules inférées</span>
+                <strong id="inferred-rate">-</strong>
+              </div>
+            </div>
+            <div class="analysis-block">
+              <h2>Lecture de la zone</h2>
+              <p id="analysis-summary" class="hint">Analyse en cours...</p>
+            </div>
+            <div class="section-heading tab-section-heading">
+              <h2>Indicateurs clés</h2>
+              <span class="badge">Zone d'étude</span>
+            </div>
+            <div class="indicator-grid">
+              <div class="indicator-card">
+                <span class="stat-label">Part agricole</span>
+                <strong id="indicator-agriculture">-</strong>
+                <span class="stat-meta">Usage dominant agricole</span>
+              </div>
+              <div class="indicator-card">
+                <span class="stat-label">Part forestière</span>
+                <strong id="indicator-forest">-</strong>
+                <span class="stat-meta">Couverture forestière dominante</span>
+              </div>
+              <div class="indicator-card">
+                <span class="stat-label">Part artificialisée</span>
+                <strong id="indicator-artificial">-</strong>
+                <span class="stat-meta">Bâti, réseaux, activités</span>
+              </div>
+              <div class="indicator-card">
+                <span class="stat-label">Part eau</span>
+                <strong id="indicator-water">-</strong>
+                <span class="stat-meta">Surfaces d'eau dominantes</span>
+              </div>
+            </div>
+            <section id="commune-compare-section" class="compare-section" hidden>
+              <div class="section-heading tab-section-heading">
+                <h2>Comparaison communale</h2>
+                <span id="compare-badge" class="badge">Même résolution</span>
+              </div>
+              <p class="hint compare-method">
+                Lecture: valeurs de la commune comparée moins valeurs de la commune étudiée, à emprise et résolution identiques.
+              </p>
+              <p id="compare-summary" class="hint">Sélectionne une deuxième commune pour comparer les profils.</p>
+              <div class="compare-grid">
+                <article class="compare-commune-card">
+                  <span class="stat-label">Commune étudiée</span>
+                  <strong id="compare-primary-name">-</strong>
+                  <p id="compare-primary-meta" class="stat-meta">-</p>
+                </article>
+                <article class="compare-commune-card">
+                  <span class="stat-label">Commune comparée</span>
+                  <strong id="compare-secondary-name">-</strong>
+                  <p id="compare-secondary-meta" class="stat-meta">-</p>
+                </article>
+              </div>
+              <div class="compare-delta-header">
+                <span>Indicateur</span>
+                <span>Ecart étudiée - comparée</span>
+              </div>
+              <div id="compare-deltas" class="compare-deltas"></div>
+            </section>
+            <div class="section-heading tab-section-heading">
+              <h2>Couverture / usage</h2>
+              <span class="badge">Top 3</span>
+            </div>
+            <div class="comparison-grid">
+              <div class="comparison-card">
+                <h3>Couverture du sol</h3>
+                <div id="comparison-coverage" class="comparison-list"></div>
+              </div>
+              <div class="comparison-card">
+                <h3>Usage du sol</h3>
+                <div id="comparison-usage" class="comparison-list"></div>
+              </div>
+            </div>
+            <div class="section-heading tab-section-heading">
+              <h2 id="ranking-title">Répartition dominante</h2>
+              <span id="ranking-badge" class="badge">Analyse</span>
+            </div>
+            <p id="ranking-note" class="hint">Chargement des classes...</p>
+            <div id="ranking" class="ranking"></div>
+          </div>
+
+          <div id="panel-legend" class="tab-panel" data-tab-panel="legend" role="tabpanel" hidden>
+            <div class="section-heading tab-section-heading">
+              <h2>Légende interactive</h2>
+              <button id="legend-reset-button" class="badge badge-button" type="button">Filtrage</button>
+            </div>
+            <div id="legend" class="legend"></div>
+          </div>
+        </section>
+      </div>
+    </aside>
+
+    <main class="map-shell">
+      <div id="map-loading" class="map-loading" hidden aria-live="polite" aria-busy="true">
+        <div class="map-loading-card">
+          <span class="map-loading-spinner" aria-hidden="true"></span>
+          <div class="map-loading-copy">
+            <strong id="map-loading-title">Chargement de la couche</strong>
+            <span id="map-loading-detail">Préparation de l'affichage…</span>
+          </div>
+        </div>
+      </div>
+      <div id="map-context-card" class="map-context-card" aria-live="polite">
+        <div class="map-context-row">
+          <span class="map-context-label">Commune</span>
+          <strong id="map-context-commune">-</strong>
+        </div>
+        <div class="map-context-row">
+          <span class="map-context-label">Résolution</span>
+          <strong id="map-context-resolution">-</strong>
+        </div>
+        <div class="map-context-row">
+          <span class="map-context-label">Hexagones</span>
+          <strong id="map-context-count">-</strong>
+        </div>
+        <div class="map-context-row">
+          <span class="map-context-label">Fiabilité</span>
+          <strong id="map-context-quality">-</strong>
+        </div>
+      </div>
+      <div class="map-toolbar" aria-label="Contrôles carte">
+        <div class="map-tool map-tool-wide">
+          <span class="map-tool-label">Fond IGN</span>
+          <div id="basemap-dropdown" class="filter-dropdown">
+            <button id="basemap-button" class="dropdown-button" type="button" aria-expanded="false">
+              <span id="basemap-label">Plan IGN</span>
+              <span class="dropdown-caret" aria-hidden="true"></span>
+            </button>
+            <div id="basemap-menu" class="dropdown-menu" hidden></div>
+          </div>
+        </div>
+
+        <div class="map-tool map-tool-toggle">
+          <span class="map-tool-label">Hexagones</span>
+          <label class="toggle-switch map-toggle-switch">
+            <input id="visibility-toggle" type="checkbox" checked>
+            <span class="toggle-slider"></span>
+            <span id="visibility-label" class="toggle-label">Affichés</span>
+          </label>
+        </div>
+
+        <div class="map-tool map-tool-toggle">
+          <span class="map-tool-label">Rideau</span>
+          <label class="toggle-switch map-toggle-switch">
+            <input id="curtain-toggle" type="checkbox">
+            <span class="toggle-slider"></span>
+            <span id="curtain-label" class="toggle-label">Désactivé</span>
+          </label>
+        </div>
+      </div>
+      <div id="curtain-overlay" class="curtain-overlay" hidden aria-hidden="true">
+        <span class="curtain-side curtain-side-left">Couverture</span>
+        <span class="curtain-side curtain-side-right">Usage</span>
+        <div id="curtain-divider" class="curtain-divider">
+          <button id="curtain-handle" class="curtain-handle" type="button" aria-label="Déplacer le rideau couverture usage">
+            <span></span>
+          </button>
+        </div>
+      </div>
+      <div id="map"></div>
+    </main>
+
+    <script src="../node_modules/leaflet/dist/leaflet.js"></script>
+    <script type="module" src="./main.js"></script>
+  </body>
+</html>
