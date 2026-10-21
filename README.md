@@ -4,12 +4,12 @@ Mini-projet de visualisation pour transformer l'OCS GE 2023 de l'Yonne en entit�
 
 ## Documentation
 
-- [Synthese de soutenance](/Users/maelquillat/Documents/Travail/ING3/OccSol/docs/synthese-soutenance.md)
-- [Documentation projet](/Users/maelquillat/Documents/Travail/ING3/OccSol/docs/documentation-projet.md)
-- [Journal des demandes](/Users/maelquillat/Documents/Travail/ING3/OccSol/docs/journal-demandes.md)
-- [Journal IA](/Users/maelquillat/Documents/Travail/ING3/OccSol/docs/ai-log.md)
-- [Fil conducteur de soutenance](/Users/maelquillat/Documents/Travail/ING3/OccSol/docs/presentation-outline.md)
-- [Résultats synthétiques](/Users/maelquillat/Documents/Travail/ING3/OccSol/docs/results.md)
+- [Synthese de soutenance](docs/synthese-soutenance.md)
+- [Documentation projet](docs/documentation-projet.md)
+- [Journal des demandes](docs/journal-demandes.md)
+- [Journal IA](docs/ai-log.md)
+- [Fil conducteur de soutenance](docs/presentation-outline.md)
+- [Résultats synthétiques](docs/results.md)
 
 ## Pré requis
 
@@ -49,7 +49,7 @@ npm run build:all
 npm run serve
 ```
 
-Puis ouvrir [viewer/index.html](/Users/maelquillat/Documents/Travail/ING3/OccSol/viewer/index.html) via `http://localhost:8000/viewer/`.
+Puis ouvrir [viewer/index.html](viewer/index.html) via `http://localhost:8000/viewer/`.
 
 Le viewer propose notamment:
 
